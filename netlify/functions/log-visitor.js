@@ -1,5 +1,4 @@
 const fetch = require('node-fetch');
-const UAParser = require('ua-parser-js');
 
 exports.handler = async (event) => {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -26,12 +25,6 @@ exports.handler = async (event) => {
     const xForwardedFor = event.headers['x-forwarded-for'];
     const visitorIP = xForwardedFor ? xForwardedFor.split(',')[0].trim() : 'Unknown';
 
-    // Parse the user agent
-    const parser = new UAParser(userAgent);
-    const osName = parser.getOS().name || 'Unknown';
-    const browserName = parser.getBrowser().name || 'Unknown';
-    const shortenedUserAgent = `${osName} | ${browserName}`;
-
     // Fetch IP info from IPinfo
     let location;
     const ipInfoResponse = await fetch(`https://ipinfo.io/${visitorIP}?token=${IPINFO_TOKEN}`);
@@ -42,11 +35,10 @@ exports.handler = async (event) => {
     const message = `
       🌟 *New Visitor Alert!* 🌟
       📍 *Referrer:* ${referrer || 'Unknown'}
-      🕵️ *User Agent:* ${shortenedUserAgent}
+      🕵️ *User Agent:* ${userAgent}
       🌐 *IP Address:* ${visitorIP}
       🌎 *Location:* ${location}
       ⏰ *Timestamp:* ${timestamp}
-      🤖 *Agent:* '@ProfileAgent_bot'
     `;
 
     // Send message to Telegram
