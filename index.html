@@ -18,7 +18,7 @@
         };
 
         // Send visitor data to the Netlify function
-        fetch('/.log-visitor', {
+        fetch('/.netlify/functions/log-visitor', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
