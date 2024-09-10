@@ -1,59 +1,59 @@
 const fetch = require('node-fetch');
 
-exports.handler = async (event, context) => {
-  // Your Telegram bot token and chat ID (secured as environment variables)
+exports.handler = async (event) => {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-  
-  // Your IPinfo token (secured as environment variable)
   const IPINFO_TOKEN = process.env.IPINFO_TOKEN;
 
-  // Extract visitor data sent from the client-side
-  const { referrer, userAgent, timestamp } = JSON.parse(event.body);
-
-  // Fetch the visitor's IP address and location using the IPinfo API from the server-side
-  let visitorIP, location;
   try {
+    let requestBody;
+
+    // Ensure the request body is present and valid
+    if (event.body) {
+      try {
+        requestBody = JSON.parse(event.body);
+      } catch (error) {
+        throw new Error("Invalid JSON format");
+      }
+    } else {
+      throw new Error("Missing request body");
+    }
+
+    const { referrer, userAgent, timestamp } = requestBody;
+
+    // Fetch IP info from IPinfo
+    let visitorIP, location;
     const ipInfoResponse = await fetch(`https://ipinfo.io/json?token=${IPINFO_TOKEN}`);
     const ipInfoData = await ipInfoResponse.json();
     visitorIP = ipInfoData.ip;
     location = `${ipInfoData.city}, ${ipInfoData.region}, ${ipInfoData.country}`;
-  } catch (error) {
-    visitorIP = "Unknown";
-    location = "Unknown";
-    console.error("Error fetching IP info:", error);
-  }
 
-  // Construct the message for Telegram
-  const message = `
-    New visitor:
-    Referrer: ${referrer || 'Unknown'}
-    User Agent: ${userAgent}
-    IP Address: ${visitorIP}
-    Location: ${location}
-    Timestamp: ${timestamp}
-  `;
+    // Prepare message for Telegram
+    const message = `
+      New visitor:
+      Referrer: ${referrer || 'Unknown'}
+      User Agent: ${userAgent}
+      IP Address: ${visitorIP}
+      Location: ${location}
+      Timestamp: ${timestamp}
+    `;
 
-  const telegramURL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(message)}`;
-
-  // Send the data to Telegram securely
-  try {
+    // Send message to Telegram
+    const telegramURL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(message)}`;
     const telegramResponse = await fetch(telegramURL);
-    if (telegramResponse.ok) {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ message: "Visitor info sent to Telegram successfully." }),
-      };
-    } else {
-      return {
-        statusCode: telegramResponse.status,
-        body: JSON.stringify({ error: "Failed to send message to Telegram." }),
-      };
+    if (!telegramResponse.ok) {
+      throw new Error(`Telegram API response: ${telegramResponse.status}`);
     }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: "Visitor info sent to Telegram successfully." }),
+    };
   } catch (error) {
+    console.error('Function error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Error sending message to Telegram." }),
+      body: JSON.stringify({ error: error.message }),
     };
   }
 };
