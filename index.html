@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Profile</title>
+</head>
+<body>
+    <h1>Welcome to My Instagram Profile</h1>
+    <p>Click the link to visit my Instagram profile: <a href="https://www.instagram.com/yourprofile" target="_blank">Instagram</a></p>
+
+    <script>
+        // Collect basic visitor data
+        const visitorData = {
+            referrer: document.referrer,
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+        };
+
+        // Send visitor data to the Netlify function
+        fetch('/.log-visitor', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(visitorData),
+        })
+        .then(response => response.json())
+        .then(data => console.log(data))
+        .catch(error => console.error("Error logging visitor info:", error));
+    </script>
+</body>
+</html>
