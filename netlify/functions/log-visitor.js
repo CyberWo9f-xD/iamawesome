@@ -1,4 +1,5 @@
 const fetch = require('node-fetch');
+const UAParser = require('ua-parser-js');
 
 exports.handler = async (event) => {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -25,24 +26,31 @@ exports.handler = async (event) => {
     const xForwardedFor = event.headers['x-forwarded-for'];
     const visitorIP = xForwardedFor ? xForwardedFor.split(',')[0].trim() : 'Unknown';
 
+    // Parse the user agent
+    const parser = new UAParser(userAgent);
+    const osName = parser.getOS().name || 'Unknown';
+    const browserName = parser.getBrowser().name || 'Unknown';
+    const shortenedUserAgent = `${osName} | ${browserName}`;
+
     // Fetch IP info from IPinfo
     let location;
     const ipInfoResponse = await fetch(`https://ipinfo.io/${visitorIP}?token=${IPINFO_TOKEN}`);
     const ipInfoData = await ipInfoResponse.json();
     location = `${ipInfoData.city || 'Unknown'}, ${ipInfoData.region || 'Unknown'}, ${ipInfoData.country || 'Unknown'}`;
 
-    // Prepare message for Telegram
+    // Prepare a beautiful message for Telegram
     const message = `
-      New visitor:
-      Referrer: ${referrer || 'Unknown'}
-      User Agent: ${userAgent}
-      IP Address: ${visitorIP}
-      Location: ${location}
-      Timestamp: ${timestamp}
+      🌟 *New Visitor Alert!* 🌟
+      📍 *Referrer:* ${referrer || 'Unknown'}
+      🕵️ *User Agent:* ${shortenedUserAgent}
+      🌐 *IP Address:* ${visitorIP}
+      🌎 *Location:* ${location}
+      ⏰ *Timestamp:* ${timestamp}
+      🤖 *Agent:* '@ProfileAgent_bot'
     `;
 
     // Send message to Telegram
-    const telegramURL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(message)}`;
+    const telegramURL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${encodeURIComponent(message)}&parse_mode=Markdown`;
     const telegramResponse = await fetch(telegramURL);
     if (!telegramResponse.ok) {
       throw new Error(`Telegram API response: ${telegramResponse.status}`);
