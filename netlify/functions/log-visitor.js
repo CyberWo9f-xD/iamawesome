@@ -21,12 +21,15 @@ exports.handler = async (event) => {
 
     const { referrer, userAgent, timestamp } = requestBody;
 
+    // Get visitor's IP from X-Forwarded-For header
+    const xForwardedFor = event.headers['x-forwarded-for'];
+    const visitorIP = xForwardedFor ? xForwardedFor.split(',')[0].trim() : 'Unknown';
+
     // Fetch IP info from IPinfo
-    let visitorIP, location;
-    const ipInfoResponse = await fetch(`https://ipinfo.io/json?token=${IPINFO_TOKEN}`);
+    let location;
+    const ipInfoResponse = await fetch(`https://ipinfo.io/${visitorIP}?token=${IPINFO_TOKEN}`);
     const ipInfoData = await ipInfoResponse.json();
-    visitorIP = ipInfoData.ip;
-    location = `${ipInfoData.city}, ${ipInfoData.region}, ${ipInfoData.country}`;
+    location = `${ipInfoData.city || 'Unknown'}, ${ipInfoData.region || 'Unknown'}, ${ipInfoData.country || 'Unknown'}`;
 
     // Prepare message for Telegram
     const message = `
